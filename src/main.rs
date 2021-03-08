@@ -253,7 +253,10 @@ async fn handle_input_line(
                 }
                 RconError::ConnectionClosed => {
                     print_error_type("Connection Closed", raw).unwrap();
-                    return Err(RconError::ConnectionClosed);
+                    if !raw {
+                        execute!(stdout(), ResetColor, Print("\n".to_string())).unwrap();
+                    }
+                    return Ok(());
                 }
                 RconError::InvalidArguments { our_query: _ } => {
                     print_error_type("Invalid Arguments", raw).unwrap();
