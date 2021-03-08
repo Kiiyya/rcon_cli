@@ -1,6 +1,6 @@
 [package]
 name = "rcon_cli"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Kiiya <snoewflaek@gmail.com>"]
 edition = "2018"
 
@@ -11,10 +11,11 @@ opt-level = 3 # AFAIK default is 2.
 # panic = 'abort'     # Abort on panic. Supposedly helps reduzing binary size.
 
 [dependencies]
-# by default the bf4 part is included in the rcon library, but we don't want that (yet).
-# so we take it out with default-features = false.
-battlefield_rcon = { git = "https://github.com/Kiiyya/BattleFox", default-features = false }
-tokio = { version = "1.2.0", features = ["rt-multi-thread"]}
+battlefield_rcon = { git = "https://github.com/Kiiyya/BattleFox" }
+# battlefield_rcon = { path = "./../BattleFox/battlefield_rcon" }
+
+tokio = { version = "1.2.0", features = ["rt-multi-thread", "io-util"]}
+tokio-stream = "0.1"
 ascii = "1.0.0"
 
 dotenv = "0.15.0"
