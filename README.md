@@ -7,7 +7,6 @@ Extremely simple and BF4-specifics-unaware (yet) library to send and receive str
 Hint: I also read in environment
 variables (one per line) from a .env file in the current working directory or up!
 
-
 ```
 USAGE:
     rcon_cli [FLAGS] --ip <rcon_ip> --password <rcon_password> --port <rcon_port> [SUBCOMMAND]
@@ -26,11 +25,19 @@ SUBCOMMANDS:
     (none)   Enter interactive mode
 ```
 
-
-## Example `.env` file
+### Example `.env` file
 Put this anywhere in your current working directory (or up).
 ```
 BFOX_RCON_IP=12.34.56.78
 BFOX_RCON_PORT=30300
 BFOX_RCON_PASSWORD=qw3rTY1337
 ```
+
+## Installing
+You can find pre-compiled binaries [on the GitHub releases page](https://github.com/Kiiyya/rcon_cli/releases/).
+
+But if you have `cargo` available, you might as well just install from source:
+```
+cargo install --git https://github.com/Kiiyya/rcon_cli
+```
+...which also puts `rcon_client` in your `PATH`, yay :>.
