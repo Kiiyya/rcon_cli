@@ -2,31 +2,31 @@
 
 Extremely simple and BF4-specifics-unaware (yet) library to send and receive strings.
 
+## Usage
+
+- `--raw` to disable color output and extra formatting.
+
+### Subcommand: (none)
+This is the default, you will get a simple REPL like this:
 ![Example Usage](./.github/rcon_cli_example_usage.png)
 
-Hint: I also read in environment
-variables (one per line) from a .env file in the current working directory or up!
-
+### Subommand: `query`
+Just sends a single query and returns the result.
 ```
-USAGE:
-    rcon_cli [FLAGS] --ip <rcon_ip> --password <rcon_password> --port <rcon_port> [SUBCOMMAND]
-
-FLAGS:
-    -r, --raw        Prevents color output and ->, <-. Use this for automated scripts
-
-OPTIONS:
-        --ip <rcon_ip>                Sets the RCON IP [env: BFOX_RCON_IP=]
-        --password <rcon_password>    Sets the RCON password. If possible, please use an environment
-                                      variable or .env file instead! [env: BFOX_RCON_PASSWORD=]
-        --port <rcon_port>            Sets the RCON port [env: BFOX_RCON_PORT=]
-
-SUBCOMMANDS:
-    query    Send single query and print result, instead of going into interactive mode
-    (none)   Enter interactive mode
+rcon_cli query admin.killPlayer PocketWolfy
 ```
 
-### Example `.env` file
-Put this anywhere in your current working directory (or up).
+### Subcommand: `events`
+Will monitor all incoming events. By default, punkbuster messages are filtered out.
+```
+rcon_cli events
+rcon_cli --punkbuster yes events
+```
+
+## Setting IP/port/password via `.env` file
+I also read in environment variables (one per line) from a .env file in the current working
+directory or up!
+Put this anywhere in your current working directory (or up):
 ```
 BFOX_RCON_IP=12.34.56.78
 BFOX_RCON_PORT=30300
@@ -41,3 +41,9 @@ But if you have `cargo` available, you might as well just install from source:
 cargo install --git https://github.com/Kiiyya/rcon_cli
 ```
 ...which also puts `rcon_client` in your `PATH`, yay :>.
+
+<!-- OPTIONS:
+        --ip <rcon_ip>                Sets the RCON IP [env: BFOX_RCON_IP=]
+        --password <rcon_password>    Sets the RCON password. If possible, please use an environment
+                                      variable or .env file instead! [env: BFOX_RCON_PASSWORD=]
+        --port <rcon_port>            Sets the RCON port [env: BFOX_RCON_PORT=] -->
