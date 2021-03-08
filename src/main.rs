@@ -103,7 +103,10 @@ async fn main() -> RconResult<()> {
                 .unwrap();
             events_dump(raw, bf4.event_stream().await?, show_pb).await?;
         }
-        _ => interactive(raw, bf4).await?,
+        _ => match interactive(raw, bf4).await {
+            Err(RconError::ConnectionClosed) => Ok(()), // if the error was connection closed, then, so be it!
+            other => other
+        }?
     }
 
     Ok(())
@@ -256,7 +259,7 @@ async fn handle_input_line(
                     if !raw {
                         execute!(stdout(), ResetColor, Print("\n".to_string())).unwrap();
                     }
-                    return Ok(());
+                    return Err(RconError::ConnectionClosed);
                 }
                 RconError::InvalidArguments { our_query: _ } => {
                     print_error_type("Invalid Arguments", raw).unwrap();
