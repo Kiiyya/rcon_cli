@@ -1,0 +1,22 @@
+[package]
+name = "rcon_cli"
+version = "0.1.0"
+authors = ["Kiiya <snoewflaek@gmail.com>"]
+edition = "2018"
+
+[profile.release]
+lto = true
+codegen-units = 1 # Reduce number of codegen units to increase optimizations.
+opt-level = 3 # AFAIK default is 2.
+# panic = 'abort'     # Abort on panic. Supposedly helps reduzing binary size.
+
+[dependencies]
+# by default the bf4 part is included in the rcon library, but we don't want that (yet).
+# so we take it out with default-features = false.
+battlefield_rcon = { git = "https://github.com/Kiiyya/BattleFox", default-features = false }
+tokio = { version = "1.2.0", features = ["rt-multi-thread"]}
+ascii = "1.0.0"
+
+dotenv = "0.15.0"
+crossterm = "0.19.0"
+clap = "2.33.3"
