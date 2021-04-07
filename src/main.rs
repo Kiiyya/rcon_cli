@@ -7,6 +7,7 @@ use clap::{Arg, SubCommand};
 use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor};
 use dotenv::dotenv;
 use tokio_stream::{Stream, StreamExt};
+use chrono::Utc;
 
 use battlefield_rcon::{
     bf4::{
@@ -23,7 +24,7 @@ async fn main() -> RconResult<()> {
     let matches = clap::App::new("rcon_cli")
         .version("0.1.1")
         .about("Extremely simple and BF4-specifics-unaware (yet) library to send and receive strings. Hint: I also read in environment variables (one per line) from a .env file in the current working directory or up!")
-        .author("Kiiya (snoewflaek@gmail.com)")
+        .author("Kiiya (snoewflaek@gmail.com, Discord: Kiiya#0456)")
         .arg(Arg::with_name("raw")
             .short("r")
             .long("--raw")
@@ -124,20 +125,20 @@ async fn events_dump(
 
     while let Some(event) = stream.next().await {
         match event {
-            Ok(ev) => println!("<- {:?}", ev),
+            Ok(ev) => println!("{} {:?}", Utc::now(), ev),
             Err(Bf4Error::UnknownEvent(vec)) => {
                 // TODO make fancy colors with UNKNWON EVENT RAWR once I have enough events implemented in battlefield_rcon.
-                println!("<- {:?}", vec);
+                println!("{} {:?}", Utc::now(), vec);
             }
             Err(err) => {
                 if raw {
-                    println!("<- Error {:?}", err);
+                    println!("!!! Error {:?}", err);
                 } else {
                     execute!(
                         stdout(),
                         SetForegroundColor(Color::Black),
                         SetBackgroundColor(Color::Red),
-                        Print("<- Error".to_string()),
+                        Print("!!! Error".to_string()),
                         SetForegroundColor(Color::Red),
                         SetBackgroundColor(Color::Reset),
                         Print(format!(" {:?}", err)),
