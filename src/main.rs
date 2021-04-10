@@ -7,7 +7,7 @@ use clap::{Arg, SubCommand};
 use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor};
 use dotenv::dotenv;
 use tokio_stream::{Stream, StreamExt};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 
 use battlefield_rcon::{
     bf4::{
@@ -59,6 +59,7 @@ async fn main() -> RconResult<()> {
         .subcommand(SubCommand::with_name("events")
             .about("Simply dump all events")
             .arg(Arg::with_name("show-punkbuster").takes_value(true).help("Whether to show PunkBuster messages in dump").long("--punkbuster").default_value("no").possible_values(&["yes", "no"]))
+            // .arg(Arg::with_name("raw-json").takes_value(true).help("Serialize each known event into json, for use in automation").long("--json").default_value("yes").possible_values(&["yes", "no"]))
         )
         .get_matches();
 
@@ -77,6 +78,7 @@ async fn main() -> RconResult<()> {
         password: password.into_ascii_string().unwrap_or_else(|_| panic!("Could not parse password: \"{}\" is not an ASCII string", password)),
     };
 
+    println!("Connecting to RCON {}:{} with password ***...", coninfo.ip, coninfo.port);
     // connect to rcon
     let bf4 = match Bf4Client::connect(&coninfo).await {
         Ok(bf4) => bf4,
@@ -102,6 +104,7 @@ async fn main() -> RconResult<()> {
                     _ => panic!("clap should have caught this case..."),
                 })
                 .unwrap();
+
             events_dump(raw, bf4.event_stream().await?, show_pb).await?;
         }
         _ => match interactive(raw, bf4).await {
@@ -111,6 +114,12 @@ async fn main() -> RconResult<()> {
     }
 
     Ok(())
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct TimedEvent {
+    pub timestamp: DateTime<Utc>,
+    pub event: Event,
 }
 
 async fn events_dump(
@@ -125,20 +134,27 @@ async fn events_dump(
 
     while let Some(event) = stream.next().await {
         match event {
-            Ok(ev) => println!("{} {:?}", Utc::now(), ev),
+            Ok(ev) => {
+                let ev = TimedEvent {
+                    event: ev,
+                    timestamp: Utc::now(),
+                };
+                // println!("{}", serde_json::to_string_pretty(&ev).unwrap());
+                println!("{}", ron::to_string(&ev).unwrap());
+                // println!("<- {} {:?}", Utc::now(), ev)
+            }
             Err(Bf4Error::UnknownEvent(vec)) => {
-                // TODO make fancy colors with UNKNWON EVENT RAWR once I have enough events implemented in battlefield_rcon.
-                println!("{} {:?}", Utc::now(), vec);
+                println!("Unknown Event: {:?}", vec);
             }
             Err(err) => {
                 if raw {
-                    println!("!!! Error {:?}", err);
+                    println!("<- {} Error {:?}", Utc::now(), err);
                 } else {
                     execute!(
                         stdout(),
                         SetForegroundColor(Color::Black),
                         SetBackgroundColor(Color::Red),
-                        Print("!!! Error".to_string()),
+                        Print("<- Error".to_string()),
                         SetForegroundColor(Color::Red),
                         SetBackgroundColor(Color::Reset),
                         Print(format!(" {:?}", err)),
@@ -212,7 +228,7 @@ async fn handle_input_line(
                 str.push_str(word.as_str());
             }
             if raw {
-                println!("OK {}", str);
+                println!("{} OK {}", Utc::now(), str);
             } else {
                 execute!(
                     stdout(),
@@ -221,6 +237,7 @@ async fn handle_input_line(
                     Print("<- OK".to_string()),
                     SetForegroundColor(Color::Green),
                     SetBackgroundColor(Color::Reset),
+                    Print(format!(" {}", Utc::now())),
                     Print(str),
                     ResetColor,
                     Print("\n".to_string())
