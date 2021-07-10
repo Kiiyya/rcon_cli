@@ -1,5 +1,5 @@
-#[macro_use]
-extern crate crossterm;
+#[macro_use] extern crate crossterm;
+#[macro_use] extern crate git_version;
 
 use std::{io::{BufRead, Write, stdin, stdout}, process::exit};
 use ascii::IntoAsciiString;
@@ -17,12 +17,14 @@ use battlefield_rcon::{
     rcon::{RconConnectionInfo, RconError, RconQueryable, RconResult},
 };
 
+const GIT_VERSION : &str = git_version!();
+
 #[tokio::main]
 async fn main() -> RconResult<()> {
     dotenv().ok(); // load (additional) environment variables from `.env` file in working directory.
 
     let matches = clap::App::new("rcon_cli")
-        .version("0.1.1")
+        .version(GIT_VERSION)
         .about("Extremely simple and BF4-specifics-unaware (yet) library to send and receive strings. Hint: I also read in environment variables (one per line) from a .env file in the current working directory or up!")
         .author("Kiiya (snoewflaek@gmail.com, Discord: Kiiya#0456)")
         .arg(Arg::with_name("raw")
