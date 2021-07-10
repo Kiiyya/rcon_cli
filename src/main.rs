@@ -1,7 +1,7 @@
 #[macro_use] extern crate crossterm;
 #[macro_use] extern crate git_version;
 
-use std::{io::{BufRead, Write, stdin, stdout}, process::exit};
+use std::{fmt::Debug, io::{BufRead, Write, stdin, stdout}, process::exit};
 use ascii::IntoAsciiString;
 use clap::{Arg, SubCommand};
 use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor};
@@ -82,7 +82,7 @@ async fn main() -> RconResult<()> {
 
     println!("Connecting to RCON {}:{} with password ***...", coninfo.ip, coninfo.port);
     // connect to rcon
-    let bf4 = match Bf4Client::connect(&coninfo).await {
+    let bf4 = match Bf4Client::connect((coninfo.ip.clone(), coninfo.port), coninfo.password).await {
         Ok(bf4) => bf4,
         Err(err) => {
             println!(
@@ -119,9 +119,9 @@ async fn main() -> RconResult<()> {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-struct TimedEvent {
+struct TimedEvent<E: Debug + serde::Serialize> {
     pub timestamp: DateTime<Utc>,
-    pub event: Event,
+    pub event: E,
 }
 
 async fn events_dump(
@@ -141,12 +141,14 @@ async fn events_dump(
                     event: ev,
                     timestamp: Utc::now(),
                 };
-                // println!("{}", serde_json::to_string_pretty(&ev).unwrap());
                 println!("{}", ron::to_string(&ev).unwrap());
-                // println!("<- {} {:?}", Utc::now(), ev)
             }
             Err(Bf4Error::UnknownEvent(vec)) => {
-                println!("Unknown Event: {:?}", vec);
+                let ev = TimedEvent {
+                    event: vec,
+                    timestamp: Utc::now(),
+                };
+                println!("{}", ron::to_string(&ev).unwrap());
             }
             Err(err) => {
                 if raw {
