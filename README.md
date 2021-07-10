@@ -23,6 +23,11 @@ rcon_cli events
 rcon_cli --punkbuster yes events
 ```
 
+You can just dump all events to a file in `./logs` by running the following:
+```
+rcon_cli events --to-file yes
+```
+
 ## Setting IP/port/password via `.env` file
 I also read in environment variables (one per line) from a .env file in the current working
 directory or up!

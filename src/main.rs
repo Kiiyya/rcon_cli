@@ -1,5 +1,6 @@
 #[macro_use] extern crate crossterm;
 #[macro_use] extern crate git_version;
+#[macro_use] extern crate log;
 
 use std::{fmt::Debug, io::{BufRead, Write, stdin, stdout}, process::exit};
 use ascii::IntoAsciiString;
@@ -16,6 +17,8 @@ use battlefield_rcon::{
     },
     rcon::{RconConnectionInfo, RconError, RconQueryable, RconResult},
 };
+
+mod logging;
 
 const GIT_VERSION : &str = git_version!();
 
@@ -61,6 +64,7 @@ async fn main() -> RconResult<()> {
         .subcommand(SubCommand::with_name("events")
             .about("Simply dump all events")
             .arg(Arg::with_name("show-punkbuster").takes_value(true).help("Whether to show PunkBuster messages in dump").long("--punkbuster").default_value("no").possible_values(&["yes", "no"]))
+            .arg(Arg::with_name("log-to-file").takes_value(true).help("Log to file(s) in ./logs/* as well as to console").long("--to-file").default_value("no").possible_values(&["yes", "no"]))
             // .arg(Arg::with_name("raw-json").takes_value(true).help("Serialize each known event into json, for use in automation").long("--json").default_value("yes").possible_values(&["yes", "no"]))
         )
         .get_matches();
@@ -103,11 +107,19 @@ async fn main() -> RconResult<()> {
                 .map(|val| match val {
                     "yes" => true,
                     "no" => false,
-                    _ => panic!("clap should have caught this case..."),
+                    _ => unreachable!("clap should have caught this case..."),
+                })
+                .unwrap();
+            let log_to_file = matcher
+                .value_of("log-to-file")
+                .map(|val| match val {
+                    "yes" => true,
+                    "no" => false,
+                    _ => unreachable!("clap should have caught this case..."),
                 })
                 .unwrap();
 
-            events_dump(raw, bf4.event_stream().await?, show_pb).await?;
+            events_dump(bf4.event_stream().await?, show_pb, log_to_file).await?;
         }
         _ => match interactive(raw, bf4).await {
             Err(RconError::ConnectionClosed) => Ok(()), // if the error was connection closed, then, so be it!
@@ -125,49 +137,47 @@ struct TimedEvent<E: Debug + serde::Serialize> {
 }
 
 async fn events_dump(
-    raw: bool,
+    // raw: bool,
     stream: impl Stream<Item = Bf4Result<Event>> + Unpin,
     show_pb: bool,
+    log_to_file: bool,
 ) -> RconResult<()> {
     let mut stream = stream.filter(|ev| match ev {
         Ok(Event::PunkBusterMessage(_)) => show_pb,
         _ => true,
     });
 
+    logging::init_logging(log_to_file);
+
     while let Some(event) = stream.next().await {
-        match event {
+        let s = match event {
             Ok(ev) => {
+                // info!("{}", ron::to_string());
+                info!("{:?}", ev);
                 let ev = TimedEvent {
                     event: ev,
                     timestamp: Utc::now(),
                 };
-                println!("{}", ron::to_string(&ev).unwrap());
+                ron::to_string(&ev).unwrap()
             }
             Err(Bf4Error::UnknownEvent(vec)) => {
+                debug!("{:?}", vec);
                 let ev = TimedEvent {
                     event: vec,
                     timestamp: Utc::now(),
                 };
-                println!("{}", ron::to_string(&ev).unwrap());
+                ron::to_string(&ev).unwrap()
             }
             Err(err) => {
-                if raw {
-                    println!("<- {} Error {:?}", Utc::now(), err);
-                } else {
-                    execute!(
-                        stdout(),
-                        SetForegroundColor(Color::Black),
-                        SetBackgroundColor(Color::Red),
-                        Print("<- Error".to_string()),
-                        SetForegroundColor(Color::Red),
-                        SetBackgroundColor(Color::Reset),
-                        Print(format!(" {:?}", err)),
-                        ResetColor
-                    )
-                    .unwrap();
-                }
+                error!("{:?}", err);
+                let ev = TimedEvent {
+                    event: format!("The following Bf4Error occured: {:?}", err),
+                    timestamp: Utc::now(),
+                };
+                ron::to_string(&ev).unwrap()
             }
-        }
+        };
+        // println!("{}", s);
     }
     todo!()
 }
