@@ -11,8 +11,7 @@ opt-level = 3 # AFAIK default is 2.
 panic = 'abort'     # Abort on panic. Supposedly helps reduzing binary size.
 
 [dependencies]
-battlefield_rcon = { git = "https://github.com/Kiiyya/BattleFox" }
-# battlefield_rcon = { path = "./../BattleFox/battlefield_rcon" }
+battlefield_rcon = { git = "https://github.com/Kiiyya/BattleFox", branch = "main" }
 
 tokio = { version = "1.2.0", features = ["rt-multi-thread", "io-util"]}
 tokio-stream = "0.1"
